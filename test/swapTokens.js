@@ -55,9 +55,18 @@ describe("TokenExchange", function () {
 
 			const max_exchange_rate = BigNumber.from(utils.parseUnits("2", 23));
 
-			await exchange
+			const balanceBeforeTrade = await ethers.provider.getBalance(
+				addr1.address
+			);
+
+			const tx = await exchange
 				.connect(addr1)
 				.swapTokensForETH(tokenAmount, max_exchange_rate);
+
+			const receipt = await tx.wait();
+			const gasUsed = receipt.gasUsed;
+			const gasPrice = tx.gasPrice;
+			const gasFee = gasUsed.mul(gasPrice);
 
 			const expectedETH = swap_fee_denominator
 				.sub(swap_fee_numerator)
@@ -65,12 +74,11 @@ describe("TokenExchange", function () {
 				.mul(bigETHReserves)
 				.div(bigTokenReserves.add(tokenAmount).mul(swap_fee_denominator));
 
-			const exchange_rate = multiplier
-				.mul(BigNumber.from(10).pow(18))
-				.mul(bigETHReserves.add(expectedETH))
-				.div(bigTokenReserves);
+			const balanceAfterTrade = await ethers.provider.getBalance(addr1.address);
 
-			console.log(utils.formatUnits(exchange_rate, 23));
+			expect(balanceBeforeTrade.sub(gasFee).add(expectedETH)).to.equal(
+				balanceAfterTrade
+			);
 		});
 
 		it("Should not swap if slippage too large", async function () {
