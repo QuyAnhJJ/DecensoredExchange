@@ -1,3 +1,4 @@
+
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 describe("TokenExchange", function () {
@@ -10,7 +11,7 @@ describe("TokenExchange", function () {
     let addr2;
 
     beforeEach(async function () {
-        [owner, addr1, addr2, _] = await ethers.getSigners();
+        [owner, addr1, addr2,] = await ethers.getSigners();
 
         // Deploy the Token contract
         Token = await ethers.getContractFactory("Token");
@@ -21,6 +22,12 @@ describe("TokenExchange", function () {
         TokenExchange = await ethers.getContractFactory("TokenExchange");
         exchange = await TokenExchange.deploy();
         await exchange.deployed();
+
+        
+
+        
+
+        
     });
 
     describe("createPool", function () {
@@ -54,6 +61,23 @@ describe("TokenExchange", function () {
             expect(tokenReserves).to.equal(token_reserves);
             expect(ethReserves).to.equal(eth_reserves);
         });
+        
+        
+        it("Should return swap fee", async function () {
+            // Deploy the TokenExchange contract
+            const TokenExchange = await ethers.getContractFactory("TokenExchange");
+            const tokenExchange = await TokenExchange.deploy(); // Deploy the contract
+            await tokenExchange.deployed();
+        
+            // Call the getSwapFee function
+            const [numerator, denominator] = await tokenExchange.getSwapFee();
+        
+            // Check if returned swap fee matches the expected values
+            expect(numerator).to.equal(3); // Adjust the expected values as per your contract's initial state
+            expect(denominator).to.equal(100);
+        });
+        
+
     });
 
     describe("createPool - Insufficient Tokens", function () {
@@ -75,5 +99,11 @@ describe("TokenExchange", function () {
         });
     });
 });
+
+        
+
+
+
+    
 
 
