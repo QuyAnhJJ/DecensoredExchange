@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
-const BigNumber = require("bignumber.js");
+const { BigNumber } = require("ethers");
 
 describe("TokenExchange", function () {
 	let Token, token, TokenExchange, exchange, owner, addr1, addr2;

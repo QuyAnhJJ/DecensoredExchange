@@ -91,9 +91,28 @@ describe("TokenExchange", function () {
 
 			const max_exchange_rate = BigNumber.from(utils.parseUnits("1", 23));
 
+			const tx = exchange
+				.connect(addr1)
+				.swapTokensForETH(tokenAmount, max_exchange_rate);
+
+			await expect(tx).to.be.revertedWith("Slippage too large");
+		});
+	});
+
+	describe("Special cases", () => {
+		it("Should do something if max_slippage is negative", async function () {
+			const tokenAmount = utils.parseUnits("1", 18);
+
+			await token.mint(tokenAmount);
+			await token.approve(addr1.address, tokenAmount);
+			await token.transfer(addr1.address, tokenAmount);
+			await token.connect(addr1).approve(exchange.address, tokenAmount);
+
+			const max_exchange_rate = BigNumber.from(utils.parseUnits("-1", 23));
+
 			await expect(
 				exchange.connect(addr1).swapTokensForETH(tokenAmount, max_exchange_rate)
-			).to.be.revertedWith("Slippage too large");
+			).to.throw(Error);
 		});
 	});
 });
