@@ -48,6 +48,11 @@ describe("TokenExchange", function () {
 		it("Should swap tokens for ETH with expected echange rate", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
+			await token.mint(tokenAmount);
+			await token.approve(addr1.address, tokenAmount);
+			await token.transfer(addr1.address, tokenAmount);
+			await token.connect(addr1).approve(exchange.address, tokenAmount);
+
 			const max_exchange_rate = ethers.BigNumber.from(
 				ethers.utils.parseUnits("2", 23)
 			);
@@ -97,6 +102,20 @@ describe("TokenExchange", function () {
 				.swapTokensForETH(tokenAmount, max_exchange_rate);
 
 			await expect(tx).to.be.revertedWith("Slippage too large");
+		});
+
+		it("Should not swap if don't have enough tokens", async function () {
+			const tokenAmount = ethers.utils.parseUnits("1", 18);
+
+			const max_exchange_rate = ethers.BigNumber.from(
+				ethers.utils.parseUnits("2", 23)
+			);
+
+			const tx = exchange
+				.connect(addr1)
+				.swapTokensForETH(tokenAmount, max_exchange_rate);
+
+			await expect(tx).to.be.revertedWith("Not enough STD to swap");
 		});
 	});
 
