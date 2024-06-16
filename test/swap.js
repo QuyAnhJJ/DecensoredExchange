@@ -40,7 +40,7 @@ describe("TokenExchange", function () {
 		await exchange.createPool(token_reserves, { value: eth_reserves });
 
 		[bigETHReserves, bigTokenReserves] = [eth_reserves, token_reserves].map(
-			ethers.BigNumber.from
+			ethers.BigNumber.from,
 		);
 	});
 
@@ -51,11 +51,11 @@ describe("TokenExchange", function () {
 			await giveTokens(addr1, tokenAmount);
 
 			const max_exchange_rate = ethers.BigNumber.from(
-				ethers.utils.parseUnits("2", 23)
+				ethers.utils.parseUnits("2", 23),
 			);
 
 			const balanceBeforeTrade = await hre.ethers.provider.getBalance(
-				addr1.address
+				addr1.address,
 			);
 
 			const tx = await exchange
@@ -67,24 +67,18 @@ describe("TokenExchange", function () {
 			const gasPrice = tx.gasPrice;
 			const gasFee = gasUsed.mul(gasPrice);
 
-			const expectedETH = swap_fee_denominator
-				.sub(swap_fee_numerator)
-				.mul(tokenAmount)
-				.mul(bigETHReserves)
-				.div(bigTokenReserves.add(tokenAmount).mul(swap_fee_denominator));
-
-			console.log("expectedETH: " + expectedETH);
-			console.log(
-				"expectedETH2: " +
-					getAmountOut(tokenAmount, bigTokenReserves, bigETHReserves)
+			const expectedETH = getAmountOut(
+				tokenAmount,
+				bigTokenReserves,
+				bigETHReserves,
 			);
 
 			const balanceAfterTrade = await hre.ethers.provider.getBalance(
-				addr1.address
+				addr1.address,
 			);
 
 			expect(balanceBeforeTrade.sub(gasFee).add(expectedETH)).to.equal(
-				balanceAfterTrade
+				balanceAfterTrade,
 			);
 		});
 
@@ -94,7 +88,7 @@ describe("TokenExchange", function () {
 			await giveTokens(addr1, tokenAmount);
 
 			const max_exchange_rate = ethers.BigNumber.from(
-				ethers.utils.parseUnits("1", 23)
+				ethers.utils.parseUnits("1", 23),
 			);
 
 			const tx = exchange
@@ -108,7 +102,7 @@ describe("TokenExchange", function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
 			const max_exchange_rate = ethers.BigNumber.from(
-				ethers.utils.parseUnits("2", 23)
+				ethers.utils.parseUnits("2", 23),
 			);
 
 			const tx = exchange
@@ -126,12 +120,46 @@ describe("TokenExchange", function () {
 			await giveTokens(addr1, tokenAmount);
 
 			const max_exchange_rate = ethers.BigNumber.from(
-				ethers.utils.parseUnits("-1", 23)
+				ethers.utils.parseUnits("-1", 23),
 			);
 
 			await expect(
-				exchange.connect(addr1).swapTokensForETH(tokenAmount, max_exchange_rate)
+				exchange
+					.connect(addr1)
+					.swapTokensForETH(tokenAmount, max_exchange_rate),
 			).to.be.rejectedWith(Error);
+		});
+	});
+
+	describe("Swap ETH for tokens", function () {
+		it("Should ETH for tokens with expected exchange rate", async function () {
+			const ethIn = ethers.utils.parseUnits("1", 18);
+			const max_exchange_rate = ethers.BigNumber.from(
+				ethers.utils.parseUnits("2", 23),
+			);
+
+			const tokensBeforeTrade = await token.balanceOf(addr1.address);
+
+			const tx = await exchange
+				.connect(addr1)
+				.swapETHForTokens(max_exchange_rate, { value: ethIn });
+
+			const tokensAfterTrade = await token.balanceOf(addr1.address);
+			console.log(
+				"Balance after swap: " + ethers.utils.formatUnits(tokensAfterTrade, 18),
+			);
+
+			const expectedAmountTokens = getAmountOut(
+				ethIn,
+				bigETHReserves,
+				bigTokenReserves,
+			);
+			console.log(
+				"Expected tokens to receive: " +
+					ethers.utils.formatUnits(expectedAmountTokens, 18),
+			);
+
+			expect(tokensAfterTrade).to.equals(expectedAmountTokens);
 		});
 	});
 });
