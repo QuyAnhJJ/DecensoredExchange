@@ -44,8 +44,8 @@ describe("TokenExchange", function () {
 		);
 	});
 
-	describe("Swap Tokens for ETH - normal", function () {
-		it("Should swap tokens for ETH with expected echange rate", async function () {
+	describe("Swap Tokens for ETH - Normal", function () {
+		it("Should swap tokens for ETH with expected exchange rate", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
 			await giveTokens(addr1, tokenAmount);
@@ -82,7 +82,7 @@ describe("TokenExchange", function () {
 			);
 		});
 
-		it("Should not swap if slippage too large", async function () {
+		it("Should revert if slippage too large", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
 			await giveTokens(addr1, tokenAmount);
@@ -98,7 +98,7 @@ describe("TokenExchange", function () {
 			await expect(tx).to.be.revertedWith("Slippage too large");
 		});
 
-		it("Should not swap if don't have enough tokens", async function () {
+		it("Should revert if don't have enough tokens", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
 			const max_exchange_rate = ethers.BigNumber.from(
@@ -113,7 +113,7 @@ describe("TokenExchange", function () {
 		});
 	});
 
-	describe("Special cases", () => {
+	describe("Swap Tokens for ETH - Special cases", () => {
 		it("Should reject if max_slippage is negative", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
@@ -160,6 +160,31 @@ describe("TokenExchange", function () {
 			);
 
 			expect(tokensAfterTrade).to.equals(expectedAmountTokens);
+		});
+
+		it("Should revert if amount ETH sent is 0", async function () {
+			await expect(
+				exchange.connect(addr1).swapETHForTokens(0, { value: 0 }),
+			).to.be.revertedWith("Need ETH to swap");
+		});
+
+		it("Should revert if slippage too large", async function () {
+			const ethIn = ethers.utils.parseUnits("1", 18);
+			const max_exchange_rate = ethers.BigNumber.from(
+				ethers.utils.parseUnits("1", 5),
+			);
+
+			const multiplier2 = ethers.BigNumber.from(10).pow(18);
+
+			const numerator = multiplier.mul(ethIn.add(bigETHReserves));
+			const denominator = bigTokenReserves;
+			const exchange_rate = numerator.div(denominator);
+
+			await expect(
+				exchange.connect(addr1).swapETHForTokens(max_exchange_rate, {
+					value: ethIn,
+				}),
+			).to.be.revertedWith("Slippage too large");
 		});
 	});
 });
