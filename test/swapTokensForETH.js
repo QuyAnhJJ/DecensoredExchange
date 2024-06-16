@@ -2,15 +2,15 @@ const { expect } = require("chai");
 const hre = require("hardhat");
 const ethers = require("ethers");
 
+let Token, token, TokenExchange, exchange, owner, addr1, addr2;
+let token_reserves, eth_reserves;
+let bigTokenReserves, bigETHReserves;
+
+const multiplier = ethers.BigNumber.from(10 ** 5);
+const swap_fee_numerator = ethers.BigNumber.from(3);
+const swap_fee_denominator = ethers.BigNumber.from(100);
+
 describe("TokenExchange", function () {
-	let Token, token, TokenExchange, exchange, owner, addr1, addr2;
-	let token_reserves, eth_reserves;
-	let bigTokenReserves, bigETHReserves;
-
-	const multiplier = ethers.BigNumber.from(10 ** 5);
-	const swap_fee_numerator = ethers.BigNumber.from(3);
-	const swap_fee_denominator = ethers.BigNumber.from(100);
-
 	// beforeEach resets the network, deploys contracts, creates liquidity pool
 	beforeEach(async function () {
 		await hre.network.provider.request({
@@ -44,14 +44,11 @@ describe("TokenExchange", function () {
 		);
 	});
 
-	describe("Swap Tokens for ETH", function () {
+	describe("Swap Tokens for ETH - normal", function () {
 		it("Should swap tokens for ETH with expected echange rate", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
-			await token.mint(tokenAmount);
-			await token.approve(addr1.address, tokenAmount);
-			await token.transfer(addr1.address, tokenAmount);
-			await token.connect(addr1).approve(exchange.address, tokenAmount);
+			await giveTokens(addr1, tokenAmount);
 
 			const max_exchange_rate = ethers.BigNumber.from(
 				ethers.utils.parseUnits("2", 23)
@@ -76,6 +73,12 @@ describe("TokenExchange", function () {
 				.mul(bigETHReserves)
 				.div(bigTokenReserves.add(tokenAmount).mul(swap_fee_denominator));
 
+			console.log("expectedETH: " + expectedETH);
+			console.log(
+				"expectedETH2: " +
+					getAmountOut(tokenAmount, bigTokenReserves, bigETHReserves)
+			);
+
 			const balanceAfterTrade = await hre.ethers.provider.getBalance(
 				addr1.address
 			);
@@ -88,10 +91,7 @@ describe("TokenExchange", function () {
 		it("Should not swap if slippage too large", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
-			await token.mint(tokenAmount);
-			await token.approve(addr1.address, tokenAmount);
-			await token.transfer(addr1.address, tokenAmount);
-			await token.connect(addr1).approve(exchange.address, tokenAmount);
+			await giveTokens(addr1, tokenAmount);
 
 			const max_exchange_rate = ethers.BigNumber.from(
 				ethers.utils.parseUnits("1", 23)
@@ -123,10 +123,7 @@ describe("TokenExchange", function () {
 		it("Should reject if max_slippage is negative", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
 
-			await token.mint(tokenAmount);
-			await token.approve(addr1.address, tokenAmount);
-			await token.transfer(addr1.address, tokenAmount);
-			await token.connect(addr1).approve(exchange.address, tokenAmount);
+			await giveTokens(addr1, tokenAmount);
 
 			const max_exchange_rate = ethers.BigNumber.from(
 				ethers.utils.parseUnits("-1", 23)
@@ -138,3 +135,18 @@ describe("TokenExchange", function () {
 		});
 	});
 });
+
+async function giveTokens(addr, amount) {
+	await token.mint(amount);
+	await token.approve(addr.address, amount);
+	await token.transfer(addr.address, amount);
+	await token.connect(addr).approve(exchange.address, amount);
+}
+
+function getAmountOut(amountIn, reserveIn, reserveOut) {
+	return swap_fee_denominator
+		.sub(swap_fee_numerator)
+		.mul(amountIn)
+		.mul(reserveOut)
+		.div(reserveIn.add(amountIn).mul(swap_fee_denominator));
+}
