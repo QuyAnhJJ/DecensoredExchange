@@ -45,13 +45,8 @@ describe("TokenExchange", function () {
 	});
 
 	describe("Swap Tokens for ETH", function () {
-		it("Should swap tokens for ETH", async function () {
+		it("Should swap tokens for ETH with expected echange rate", async function () {
 			const tokenAmount = ethers.utils.parseUnits("1", 18);
-
-			await token.mint(tokenAmount);
-			await token.approve(addr1.address, tokenAmount);
-			await token.transfer(addr1.address, tokenAmount);
-			await token.connect(addr1).approve(exchange.address, tokenAmount);
 
 			const max_exchange_rate = ethers.BigNumber.from(
 				ethers.utils.parseUnits("2", 23)
