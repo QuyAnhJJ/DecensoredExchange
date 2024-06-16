@@ -62,11 +62,6 @@ describe("TokenExchange", function () {
 				"Balance after swap: " + ethers.utils.formatUnits(tokensAfterTrade, 18)
 			);
 
-			const receipt = await tx.wait();
-			const gasUsed = receipt.gasUsed;
-			const gasPrice = tx.gasPrice;
-			const gasFee = gasUsed.mul(gasPrice);
-
 			const expectedAmountTokens = swap_fee_denominator
 				.sub(swap_fee_numerator)
 				.mul(ethIn)
@@ -78,6 +73,50 @@ describe("TokenExchange", function () {
 			);
 
 			expect(tokensAfterTrade).to.equals(expectedAmountTokens);
+		});
+
+		// it("Should not swap if slippage too large", async function () {
+		// 	const ethIn = ethers.utils.parseUnits("10", 18);
+		// 	const max_exchange_rate = ethers.BigNumber.from(
+		// 		ethers.utils.parseUnits("0", 23)
+		// 	);
+		//
+		// 	const tx = await exchange
+		// 		.connect(addr1)
+		// 		.swapETHForTokens(max_exchange_rate, { value: ethIn });
+		//
+		// 	const tokensAfterTrade = await token.balanceOf(addr1.address);
+		// 	console.log(
+		// 		"Balance after swap: " + ethers.utils.formatUnits(tokensAfterTrade, 18)
+		// 	);
+		//
+		// 	await expect(tx).to.be.revertedWith("Slippage too large");
+		// });
+		//
+		it("Should not swap if exceed max slippage", async function () {
+			const ethAmount = ethers.utils.parseUnits("100", "ether");
+			const max_exchange_rate = ethers.utils.parseUnits("0", 23);
+			console.log(ethers.utils.formatUnits(max_exchange_rate, 23));
+
+			await exchange.connect(addr1).swapETHForTokens(0, { value: ethAmount });
+
+			const [bigEthReserves, bigTokenReserves] = [
+				eth_reserves,
+				token_reserves,
+			].map(ethers.BigNumber.from);
+
+			const expectedAmountTokens = swap_fee_denominator
+				.sub(swap_fee_numerator)
+				.mul(ethAmount)
+				.mul(bigTokenReserves)
+				.div(bigEthReserves.add(ethAmount).mul(swap_fee_denominator));
+
+			const exchange_rate = multiplier
+				.mul(ethers.BigNumber.from(10).pow(18))
+				.mul(bigTokenReserves.add(expectedAmountTokens))
+				.div(bigEthReserves);
+
+			console.log(ethers.utils.formatUnits(exchange_rate, 23));
 		});
 	});
 });
