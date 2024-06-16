@@ -9,8 +9,10 @@ describe("TokenExchange", function () {
     let owner;
     let addr1;
     let addr2;
+    
 
     beforeEach(async function () {
+        
         [owner, addr1, addr2,] = await ethers.getSigners();
 
         // Deploy the Token contract
@@ -62,6 +64,9 @@ describe("TokenExchange", function () {
             expect(ethReserves).to.equal(eth_reserves);
         });
         
+
+        
+        
         
         it("Should return swap fee", async function () {
             // Deploy the TokenExchange contract
@@ -98,6 +103,46 @@ describe("TokenExchange", function () {
             ).to.be.revertedWith("Not have enough tokens to create the pool");
         });
     });
+    
+    describe("checkRate", function(){
+        it("Should pass if exchange rate is within bounds", async function () {
+            
+            const minExchangeRate = ethers.utils.parseUnits("80", 18); // 0.8 Tokens per ETH scaled
+            const maxExchangeRate = ethers.utils.parseUnits("120", 18); // 1.2 Tokens per ETH scaled
+        
+            // Call checkExchangeRate to see if it passes with current reserves
+            expect(minExchangeRate, maxExchangeRate).to.not.be.reverted;
+        });
+        
+        it("Should revert if exchange rate is too low", async function () {
+            const minExchangeRate = ethers.utils.parseUnits("150", 18); // 1.5 Tokens per ETH scaled
+            const maxExchangeRate = ethers.utils.parseUnits("200", 18); // 2.0 Tokens per ETH scaled
+        
+            // Call checkExchangeRate and expect it to revert
+            expect(minExchangeRate, maxExchangeRate).to.be.revertedWith("Exchange rate too low");
+        });
+        
+        it("Should revert if exchange rate is too high", async function () {
+            const minExchangeRate = ethers.utils.parseUnits("50", 18); // 0.5 Tokens per ETH scaled
+            const maxExchangeRate = ethers.utils.parseUnits("70", 18); // 0.7 Tokens per ETH scaled
+        
+            // Call checkExchangeRate and expect it to revert
+            expect(minExchangeRate, maxExchangeRate).to.be.revertedWith("Exchange rate too high");
+        });
+        it("should get liquidity correctly", async function () {
+            
+        
+            // Get liquidity
+            const [tokenReserves, ethReserves] = await exchange.getLiquidity();
+        
+            // Check the liquidity
+            expect(tokenReserves).to.equal(tokenReserves);
+            
+            expect(ethReserves).to.equal(ethReserves);
+        });
+    });
+    
+
 });
 
         
