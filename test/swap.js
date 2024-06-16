@@ -203,3 +203,22 @@ function getAmountOut(amountIn, reserveIn, reserveOut) {
 		.mul(reserveOut)
 		.div(reserveIn.add(amountIn).mul(swap_fee_denominator));
 }
+
+async function printLiquidity(exchange) {
+	console.log(ethers.utils.formatUnits(bigTokenReserves, 18) + " KMS");
+	console.log(ethers.utils.formatEther(bigETHReserves) + " ETH");
+}
+
+async function sendETH(from, to, amount) {
+	console.log(`Sending ${amount} ETH...`);
+	const sendingValue = ethers.utils.parseEther(amount);
+	const gasLimit = 200000;
+	const gasPrice = ethers.utils.parseUnits("20", "gwei");
+	const tx = await from.sendTransaction({
+		to: to.address,
+		value: sendingValue,
+		gasLimit: gasLimit,
+		gasPrice: gasPrice,
+	});
+	return tx;
+}
